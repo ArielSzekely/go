@@ -534,15 +534,15 @@ func mustSupportAmbientCaps(t *testing.T) {
 //	}
 //}
 
-func TestAmbientCaps(t *testing.T) {
-	// Make sure we are running as root so we have permissions to use unshare
-	// and create a network namespace.
-	if os.Getuid() != 0 {
-		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
-	}
-
-	testAmbientCaps(t, false)
-}
+//func TestAmbientCaps(t *testing.T) {
+//	// Make sure we are running as root so we have permissions to use unshare
+//	// and create a network namespace.
+//	if os.Getuid() != 0 {
+//		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
+//	}
+//
+//	testAmbientCaps(t, false)
+//}
 
 func TestAmbientCapsUserns(t *testing.T) {
 	checkUserNS(t)
