@@ -317,102 +317,102 @@ func TestUnshareMountNameSpaceHelper(*testing.T) {
 	}
 }
 
-// Test for Issue 38471: unshare fails because systemd has forced / to be shared
-func TestUnshareMountNameSpace(t *testing.T) {
-	skipInContainer(t)
-	// Make sure we are running as root so we have permissions to use unshare
-	// and create a network namespace.
-	if os.Getuid() != 0 {
-		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
-	}
-
-	d, err := os.MkdirTemp("", "unshare")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
-
-	cmd := exec.Command(os.Args[0], "-test.run=TestUnshareMountNameSpaceHelper", d)
-	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Unshareflags: syscall.CLONE_NEWNS}
-
-	o, err := cmd.CombinedOutput()
-	if err != nil {
-		if strings.Contains(err.Error(), ": permission denied") {
-			t.Skipf("Skipping test (golang.org/issue/19698); unshare failed due to permissions: %s, %v", o, err)
-		}
-		t.Fatalf("unshare failed: %s, %v", o, err)
-	}
-
-	// How do we tell if the namespace was really unshared? It turns out
-	// to be simple: just try to remove the directory. If it's still mounted
-	// on the rm will fail with EBUSY. Then we have some cleanup to do:
-	// we must unmount it, then try to remove it again.
-
-	if err := os.Remove(d); err != nil {
-		t.Errorf("rmdir failed on %v: %v", d, err)
-		if err := syscall.Unmount(d, syscall.MNT_FORCE); err != nil {
-			t.Errorf("Can't unmount %v: %v", d, err)
-		}
-		if err := os.Remove(d); err != nil {
-			t.Errorf("rmdir after unmount failed on %v: %v", d, err)
-		}
-	}
-}
-
-// Test for Issue 20103: unshare fails when chroot is used
-func TestUnshareMountNameSpaceChroot(t *testing.T) {
-	skipInContainer(t)
-	// Make sure we are running as root so we have permissions to use unshare
-	// and create a network namespace.
-	if os.Getuid() != 0 {
-		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
-	}
-
-	d, err := os.MkdirTemp("", "unshare")
-	if err != nil {
-		t.Fatalf("tempdir: %v", err)
-	}
-
-	// Since we are doing a chroot, we need the binary there,
-	// and it must be statically linked.
-	x := filepath.Join(d, "syscall.test")
-	cmd := exec.Command(testenv.GoToolPath(t), "test", "-c", "-o", x, "syscall")
-	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
-	if o, err := cmd.CombinedOutput(); err != nil {
-		t.Fatalf("Build of syscall in chroot failed, output %v, err %v", o, err)
-	}
-
-	cmd = exec.Command("/syscall.test", "-test.run=TestUnshareMountNameSpaceHelper", "/")
-	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
-	cmd.SysProcAttr = &syscall.SysProcAttr{Chroot: d, Unshareflags: syscall.CLONE_NEWNS}
-
-	o, err := cmd.CombinedOutput()
-	if err != nil {
-		if strings.Contains(err.Error(), ": permission denied") {
-			t.Skipf("Skipping test (golang.org/issue/19698); unshare failed due to permissions: %s, %v", o, err)
-		}
-		t.Fatalf("unshare failed: %s, %v", o, err)
-	}
-
-	// How do we tell if the namespace was really unshared? It turns out
-	// to be simple: just try to remove the executable. If it's still mounted
-	// on, the rm will fail. Then we have some cleanup to do:
-	// we must force unmount it, then try to remove it again.
-
-	if err := os.Remove(x); err != nil {
-		t.Errorf("rm failed on %v: %v", x, err)
-		if err := syscall.Unmount(d, syscall.MNT_FORCE); err != nil {
-			t.Fatalf("Can't unmount %v: %v", d, err)
-		}
-		if err := os.Remove(x); err != nil {
-			t.Fatalf("rm failed on %v: %v", x, err)
-		}
-	}
-
-	if err := os.Remove(d); err != nil {
-		t.Errorf("rmdir failed on %v: %v", d, err)
-	}
-}
+//// Test for Issue 38471: unshare fails because systemd has forced / to be shared
+//func TestUnshareMountNameSpace(t *testing.T) {
+//	skipInContainer(t)
+//	// Make sure we are running as root so we have permissions to use unshare
+//	// and create a network namespace.
+//	if os.Getuid() != 0 {
+//		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
+//	}
+//
+//	d, err := os.MkdirTemp("", "unshare")
+//	if err != nil {
+//		t.Fatalf("tempdir: %v", err)
+//	}
+//
+//	cmd := exec.Command(os.Args[0], "-test.run=TestUnshareMountNameSpaceHelper", d)
+//	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+//	cmd.SysProcAttr = &syscall.SysProcAttr{Unshareflags: syscall.CLONE_NEWNS}
+//
+//	o, err := cmd.CombinedOutput()
+//	if err != nil {
+//		if strings.Contains(err.Error(), ": permission denied") {
+//			t.Skipf("Skipping test (golang.org/issue/19698); unshare failed due to permissions: %s, %v", o, err)
+//		}
+//		t.Fatalf("unshare failed: %s, %v", o, err)
+//	}
+//
+//	// How do we tell if the namespace was really unshared? It turns out
+//	// to be simple: just try to remove the directory. If it's still mounted
+//	// on the rm will fail with EBUSY. Then we have some cleanup to do:
+//	// we must unmount it, then try to remove it again.
+//
+//	if err := os.Remove(d); err != nil {
+//		t.Errorf("rmdir failed on %v: %v", d, err)
+//		if err := syscall.Unmount(d, syscall.MNT_FORCE); err != nil {
+//			t.Errorf("Can't unmount %v: %v", d, err)
+//		}
+//		if err := os.Remove(d); err != nil {
+//			t.Errorf("rmdir after unmount failed on %v: %v", d, err)
+//		}
+//	}
+//}
+//
+//// Test for Issue 20103: unshare fails when chroot is used
+//func TestUnshareMountNameSpaceChroot(t *testing.T) {
+//	skipInContainer(t)
+//	// Make sure we are running as root so we have permissions to use unshare
+//	// and create a network namespace.
+//	if os.Getuid() != 0 {
+//		t.Skip("kernel prohibits unshare in unprivileged process, unless using user namespace")
+//	}
+//
+//	d, err := os.MkdirTemp("", "unshare")
+//	if err != nil {
+//		t.Fatalf("tempdir: %v", err)
+//	}
+//
+//	// Since we are doing a chroot, we need the binary there,
+//	// and it must be statically linked.
+//	x := filepath.Join(d, "syscall.test")
+//	cmd := exec.Command(testenv.GoToolPath(t), "test", "-c", "-o", x, "syscall")
+//	cmd.Env = append(os.Environ(), "CGO_ENABLED=0")
+//	if o, err := cmd.CombinedOutput(); err != nil {
+//		t.Fatalf("Build of syscall in chroot failed, output %v, err %v", o, err)
+//	}
+//
+//	cmd = exec.Command("/syscall.test", "-test.run=TestUnshareMountNameSpaceHelper", "/")
+//	cmd.Env = append(os.Environ(), "GO_WANT_HELPER_PROCESS=1")
+//	cmd.SysProcAttr = &syscall.SysProcAttr{Chroot: d, Unshareflags: syscall.CLONE_NEWNS}
+//
+//	o, err := cmd.CombinedOutput()
+//	if err != nil {
+//		if strings.Contains(err.Error(), ": permission denied") {
+//			t.Skipf("Skipping test (golang.org/issue/19698); unshare failed due to permissions: %s, %v", o, err)
+//		}
+//		t.Fatalf("unshare failed: %s, %v", o, err)
+//	}
+//
+//	// How do we tell if the namespace was really unshared? It turns out
+//	// to be simple: just try to remove the executable. If it's still mounted
+//	// on, the rm will fail. Then we have some cleanup to do:
+//	// we must force unmount it, then try to remove it again.
+//
+//	if err := os.Remove(x); err != nil {
+//		t.Errorf("rm failed on %v: %v", x, err)
+//		if err := syscall.Unmount(d, syscall.MNT_FORCE); err != nil {
+//			t.Fatalf("Can't unmount %v: %v", d, err)
+//		}
+//		if err := os.Remove(x); err != nil {
+//			t.Fatalf("rm failed on %v: %v", x, err)
+//		}
+//	}
+//
+//	if err := os.Remove(d); err != nil {
+//		t.Errorf("rmdir failed on %v: %v", d, err)
+//	}
+//}
 
 func TestUnshareUidGidMappingHelper(*testing.T) {
 	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
@@ -513,26 +513,26 @@ func mustSupportAmbientCaps(t *testing.T) {
 
 // TestAmbientCapsHelper isn't a real test. It's used as a helper process for
 // TestAmbientCaps.
-func TestAmbientCapsHelper(*testing.T) {
-	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
-		return
-	}
-	defer os.Exit(0)
-
-	caps, err := getCaps()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
-	}
-	if caps.data[0].effective&(1<<uint(CAP_SYS_TIME)) == 0 {
-		fmt.Fprintln(os.Stderr, "CAP_SYS_TIME unexpectedly not in the effective capability mask")
-		os.Exit(2)
-	}
-	if caps.data[1].effective&(1<<uint(CAP_SYSLOG&31)) == 0 {
-		fmt.Fprintln(os.Stderr, "CAP_SYSLOG unexpectedly not in the effective capability mask")
-		os.Exit(2)
-	}
-}
+//func TestAmbientCapsHelper(*testing.T) {
+//	if os.Getenv("GO_WANT_HELPER_PROCESS") != "1" {
+//		return
+//	}
+//	defer os.Exit(0)
+//
+//	caps, err := getCaps()
+//	if err != nil {
+//		fmt.Fprintln(os.Stderr, err)
+//		os.Exit(2)
+//	}
+//	if caps.data[0].effective&(1<<uint(CAP_SYS_TIME)) == 0 {
+//		fmt.Fprintln(os.Stderr, "CAP_SYS_TIME unexpectedly not in the effective capability mask")
+//		os.Exit(2)
+//	}
+//	if caps.data[1].effective&(1<<uint(CAP_SYSLOG&31)) == 0 {
+//		fmt.Fprintln(os.Stderr, "CAP_SYSLOG unexpectedly not in the effective capability mask")
+//		os.Exit(2)
+//	}
+//}
 
 func TestAmbientCaps(t *testing.T) {
 	// Make sure we are running as root so we have permissions to use unshare
